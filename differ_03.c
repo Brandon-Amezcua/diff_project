@@ -170,6 +170,7 @@ void maindiff(para* p, para* q) {
     if (foundmatch) {
       if ((foundmatch = para_equal(p, q)) == 0) {
         while ((foundmatch = para_equal(p, q)) == 0) {
+          printf("%d.%zu\n", q->start, para_size(q));
           para_print(q, printright);
           q = para_next(q);
           qlast = q;
@@ -187,15 +188,16 @@ void maindiff(para* p, para* q) {
         }
       }
       printf("\n");
-      //para_print(q, printboth);
       p = para_next(p);
       q = para_next(q);
     } else {
+      printf("%d.%d\n", p->start + 1, p->stop + 1);
       para_print(p, printleft);
       p = para_next(p);
     }
   }
   while (q != NULL) {
+    printf("%d.%d\n", q->start -2, q->stop -3);
     para_print(q, printright);
     q = para_next(q);
   }
