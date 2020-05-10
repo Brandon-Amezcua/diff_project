@@ -22,6 +22,9 @@
 #include "para.h"
 #include "util.h"
 
+int versions = 0;
+int v2 = 0;
+
 void version(void) {
   printf("\n\n\ndiff (CSUF diffutils) 1.0.0\n");
   printf("Copyright (C) 2014 CSUF\n");
@@ -59,7 +62,7 @@ void loadfiles(const char* filename1, const char* filename2) {
 
   if (count1 != count2) { different = 1;  return; }
   for (int i = 0, j = 0; i < count1 && j < count2;  ++i, ++j) {
-    if (strcmp(strings1[i], strings2[j]) != 0) { different = 1;  return; }
+    if (strcmp(strings1[i], strings2[j]) != 0) { different = 1; return; }
   }
 }
 
@@ -122,6 +125,12 @@ void init_options_files(int argc, const char* argv[]) {
     ++argv;   // DEBUG only;  move increment up to top of switch at release
   }
 
+  if (showsidebyside) { versions = 1; }
+
+  if (showleftcolumn) { v2 = 1; }
+
+  if (suppresscommon) { v2 = 2; }
+
   if (!showcontext && !showunified && !showsidebyside && !showleftcolumn) {
     diffnormal = 1;
   }
@@ -139,18 +148,59 @@ void init_options_files(int argc, const char* argv[]) {
 
   if (report_identical && !different) { printf("The files are identical.\n\n");   exit(0); }
 
-  if (showbrief && different) { printf("The files are different.\n\n");   exit(0); }
+  else if (report_identical && different) { exit(0); }
+
+  if (showbrief && different) { printf("The files are different.\n\n");   exit(0);}
+
+  else if (showbrief && !different) {  exit(0); }
 }
 
+void maindiff(para* p, para* q) {
+  int foundmatch = 0;
 
-int main(int argc, const char * argv[]) {
-  init_options_files(--argc, ++argv);
+  para* qlast = q;
+  while (p != NULL) {
+    qlast = q;
+    foundmatch = 0;
+    while (q != NULL && (foundmatch = para_equal(p, q)) == 0) {
+      q = para_next(q);
+    }
+    q = qlast;
+    if (foundmatch) {
+      if ((foundmatch = para_equal(p, q)) == 0) {
+        while ((foundmatch = para_equal(p, q)) == 0) {
+          para_print(q, printright);
+          q = para_next(q);
+          qlast = q;
+        }
+      } else {
+        size_t i, j;
+        for (i = p->start, j = q->start; i > para_size(p) || j > para_size(q); i++, j++) {
+          if (strcmp(p->base[i], q->base[j]) != 0) {
+            printf("\n");
+            printleft(p->base[i]);
+            printf("------------------------\n");
+            printright(q->base[j]);
+            break;
+          }
+        }
+      }
+      printf("\n");
+      //para_print(q, printboth);
+      p = para_next(p);
+      q = para_next(q);
+    } else {
+      para_print(p, printleft);
+      p = para_next(p);
+    }
+  }
+  while (q != NULL) {
+    para_print(q, printright);
+    q = para_next(q);
+  }
+}
 
-//  para_printfile(strings1, count1, printleft);
-//  para_printfile(strings2, count2, printright);
-
-  para* p = para_first(strings1, count1);
-  para* q = para_first(strings2, count2);
+void sidebysidediff (para* p, para* q) {
   int foundmatch = 0;
 
   para* qlast = q;
@@ -164,7 +214,7 @@ int main(int argc, const char * argv[]) {
 
     if (foundmatch) {
       while ((foundmatch = para_equal(p, q)) == 0) {
-        para_print(q, printright);
+        para_print(q, printrightside);
         q = para_next(q);
         qlast = q;
       }
@@ -177,8 +227,103 @@ int main(int argc, const char * argv[]) {
     }
   }
   while (q != NULL) {
-    para_print(q, printright);
+    para_print(q, printrightside);
     q = para_next(q);
+  }
+}
+
+void leftdiff (para* p, para* q) {
+  int foundmatch = 0;
+
+  para* qlast = q;
+  while (p != NULL) {
+    qlast = q;
+    foundmatch = 0;
+    while (q != NULL && (foundmatch = para_equal(p, q)) == 0) {
+      q = para_next(q);
+    }
+    q = qlast;
+
+    if (foundmatch) {
+      while ((foundmatch = para_equal(p, q)) == 0) {
+        para_print(q, printrightside);
+        q = para_next(q);
+        qlast = q;
+      }
+      para_print(p, printleftside);
+      p = para_next(p);
+      q = para_next(q);
+    } else {
+      para_print(p, printleft);
+      p = para_next(p);
+    }
+  }
+  while (q != NULL) {
+    para_print(q, printrightside);
+    q = para_next(q);
+  }
+}
+
+void suppressdiff(para* p, para* q) {
+  int foundmatch = 0;
+
+  para* qlast = q;
+  while (p != NULL) {
+    qlast = q;
+    foundmatch = 0;
+    while (q != NULL && (foundmatch = para_equal(p, q)) == 0) {
+      q = para_next(q);
+    }
+    q = qlast;
+    if (foundmatch) {
+      if ((foundmatch = para_equal(p, q)) == 0) {
+        while ((foundmatch = para_equal(p, q)) == 0) {
+          para_print(q, printrightside);
+          q = para_next(q);
+          qlast = q;
+        }
+      } else {
+        size_t i, j;
+        for (i = p->start, j = q->start; i > para_size(p) || j > para_size(q); i++, j++) {
+          if (strcmp(p->base[i], q->base[j]) != 0) {
+            printleft(p->base[i]);
+            printrightside(q->base[j]);
+            break;
+          }
+        }
+      }
+      printf("\n");
+      //para_print(q, printboth);
+      p = para_next(p);
+      q = para_next(q);
+    } else {
+      para_print(p, printleft);
+      p = para_next(p);
+    }
+  }
+  while (q != NULL) {
+    para_print(q, printrightside);
+    q = para_next(q);
+  }
+}
+
+int main(int argc, const char * argv[]) {
+  init_options_files(--argc, ++argv);
+
+//  para_printfile(strings1, count1, printleft);
+//  para_printfile(strings2, count2, printright);
+
+  para* p = para_first(strings1, count1);
+  para* q = para_first(strings2, count2);
+
+  if (versions == 0) {
+    maindiff(p,q);
+  } else if (versions == 1 && v2 == 0) {
+    sidebysidediff(p,q);
+  } else if (versions == 1 && v2 == 1) {
+    leftdiff(p,q);
+  } else if (versions == 1 && v2 == 2) {
+    suppressdiff(p,q);
   }
 
   return 0;

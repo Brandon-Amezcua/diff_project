@@ -16,7 +16,9 @@ char* yesorno(int condition);
 FILE* openfile(const char* filename, const char* openflags);
 
 void printleft(const char* left);
+void printleftside(const char* left);
 void printright(const char* right);
+void printrightside(const char* right);
 void printboth(const char* left_right);
 
 void printline(void);

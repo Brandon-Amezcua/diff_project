@@ -29,16 +29,32 @@ void printline(void) {
 
 void printleft(const char* left) {
   char buf[BUFLEN];
-  
-  strcpy(buf, left);
+  buf[0] = '<';
+  buf[1] = ' ';
+  strcat(buf, left);
   int j = 0, len = (int)strlen(buf) - 1;
-  for (j = 0; j <= 48 - len ; ++j) { buf[len + j] = ' '; }
-  buf[len + j++] = '<';
   buf[len + j++] = '\0';
   printf("%s\n", buf);
+  memset(buf, sizeof(buf), BUFLEN);
+}
+
+void printleftside(const char* left) {
+  char buf[BUFLEN];
+  strcat(buf, left);
+  int j = 0, len = (int)strlen(buf) - 1;
+  for (j = 0; j <= 48 - len ; ++j) { buf[len + j] = ' '; }
+  buf[len + j++] = '(';
+  buf[len + j++] = '\0';
+  printf("%s\n", buf);
+  memset(buf, sizeof(buf), BUFLEN);
 }
 
 void printright(const char* right) {
+  if (right == NULL) { return; }
+  printf("%s %s", ">", right);
+}
+
+void printrightside(const char* right) {
   if (right == NULL) { return; }
   printf("%50s %s", ">", right);
 }
@@ -50,4 +66,3 @@ void printboth(const char* left_right) {
   buf[len - 1] = '\0';
   printf("%-50s %s", buf, left_right);
 }
-
